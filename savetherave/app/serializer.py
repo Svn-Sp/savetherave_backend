@@ -15,6 +15,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = get_user_model()
         fields = [
+            "id",
             "username",
             "password",
             "birthday",
