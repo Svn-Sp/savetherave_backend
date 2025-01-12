@@ -69,3 +69,11 @@ class Item(models.Model):
         null=True,
     )
     party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name="items")
+
+
+class Notification(models.Model):
+    sender = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="sent_notifications"
+    )
+    receiver = models.ManyToManyField(User, related_name="received_notifications")
+    message = models.TextField()

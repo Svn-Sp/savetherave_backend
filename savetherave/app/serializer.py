@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.urls import include, path
 from rest_framework import routers, serializers, status, viewsets
 
-from app.models import Item, Party
+from app.models import Item, Notification, Party
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
@@ -70,3 +70,11 @@ class PartySerializer(serializers.HyperlinkedModelSerializer):
             "image_link",
             "participants",
         ]
+
+
+class NotificationSerializer(serializers.HyperlinkedModelSerializer):
+    sender = UserSerializer()
+
+    class Meta:
+        model = Notification
+        fields = ["id", "message", "sender"]

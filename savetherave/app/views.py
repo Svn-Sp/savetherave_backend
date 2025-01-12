@@ -15,8 +15,8 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from app.models import Item, Party, User
-from app.serializer import PartySerializer, UserSerializer
+from app.models import Item, Notification, Party, User
+from app.serializer import NotificationSerializer, PartySerializer, UserSerializer
 
 
 # Create your views here
@@ -207,6 +207,7 @@ def create_party(request):
         *get_user_model().objects.filter(id__in=request.data["white_list"])
     )
     party.calculate_invited_people()
+    party.participants.add(user)
     party.save()
     return JsonResponse({"party_id": party.id})
 
@@ -257,7 +258,14 @@ def join_party(request):
         return HttpResponse(status=403)
     party.participants.add(user)
     party.save()
-    return JsonResponse({"message": "Registered successfully"})
+    return JsonResponse(
+        {
+            "message": "Registered successfully",
+            "participants": UserSerializer(
+                party.participants.all(), many=True, context={"request": request}
+            ).data,
+        },
+    )
 
 
 @api_view(["POST"])
@@ -270,7 +278,14 @@ def leave_party(request):
         return HttpResponse(status=403)
     party.participants.remove(user)
     party.save()
-    return JsonResponse({"message": "Left successfully"})
+    return JsonResponse(
+        {
+            "message": "Left successfully",
+            "participants": UserSerializer(
+                party.participants.all(), many=True, context={"request": request}
+            ).data,
+        }
+    )
 
 
 @api_view(["GET"])
@@ -294,5 +309,41 @@ def search_users_by_username(request):
     users = get_user_model().objects.filter(username__icontains=username)
     return JsonResponse(
         UserSerializer(users, many=True, context={"request": request}).data,
+        safe=False,
+    )
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def notify_party_people(request):
+    party = Party.objects.get(id=request.data["party_id"])
+    sender = request.user
+    notification = Notification.objects.create(
+        sender=sender,
+        message=request.data["message"],
+    )
+    if request.data["host_only"]:
+        print("Received host only msg", request.data["message"])
+        notification.receiver.add(party.host)
+    else:
+        notification.receiver.add(*party.participants.all())
+    notification.save()
+    return JsonResponse({"message": "Notified successfully"})
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_notifications(request):
+    user = request.user
+    notifications = list(user.received_notifications.all())
+    # Delete read notifications
+    for notification in notifications:
+        notification.delete()
+    return JsonResponse(
+        NotificationSerializer(
+            notifications, many=True, context={"request": request}
+        ).data,
         safe=False,
     )

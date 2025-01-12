@@ -3,7 +3,7 @@ from django.contrib import admin
 # Register your models here.
 from django.contrib.auth.admin import UserAdmin
 
-from app.models import Party, User
+from app.models import Item, Notification, Party, User
 
 
 class CustomUserAdmin(UserAdmin):
@@ -29,3 +29,5 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Party)
+admin.site.register(Item)
+admin.site.register(Notification)
