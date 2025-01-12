@@ -28,6 +28,32 @@ def user_info(request, id):
         UserSerializer(User.objects.get(id=id), context={"request": request}).data
     )
 
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def received_requests(request):
+    user = request.user
+    requests = user.received_requests.all()
+    return JsonResponse(
+        UserSerializer(requests, many=True, context={"request": request}).data,
+        safe=False
+    )
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def are_friends(request):
+    user = request.user
+    user_id = request.query_params.get("id")
+    if not user_id:
+        return Response({"error": "id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        friend = get_user_model().objects.get(id=user_id)
+        are_friends = user.friends.filter(id=friend.id).exists()
+        return JsonResponse({"are_friends": are_friends})
+    except get_user_model().DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
 
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
@@ -53,28 +79,72 @@ class CreateUserView(CreateAPIView):
         )
 
 
-class AddFriendView(CreateAPIView):
+class AcceptFriendView(CreateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = UserSerializer
 
     def post(self, request):
         model = get_user_model()
-        friend_name = request.query_params.get("friend_name")
-        if not friend_name:
-            return Response(
-                {"error": "friend_name is required"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        friend = request.query_params.get("id")
+        if not friend:
+            return Response({"error": "id who to add is required"},
+                            status=status.HTTP_400_BAD_REQUEST)
         try:
-            friend = model.objects.get(username=friend_name)
+            friend = model.objects.get(id=friend)
             request.user.friends.add(friend)
-            return Response(
-                {"message": "Friend added successfully"}, status=status.HTTP_200_OK
-            )
+            friend.received_requests.remove(request.user)
+            return Response({"message": "Friend added successfully"},
+                            status=status.HTTP_200_OK)
         except model.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "User not found"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+class DeclineFriendView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    serializer_class = UserSerializer
+
+    def post(self, request):
+        model = get_user_model()
+        friend = request.query_params.get("id")
+        if not friend:
+            return Response({"error": "id who to decline is required"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            friend = model.objects.get(id=friend)
+            if request.user in friend.received_requests.all():
+                friend.received_requests.remove(request.user)
+            else:
+                return Response({"error": "User sent no request"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Friend declined successfully"},
+                            status=status.HTTP_200_OK)
+        except model.DoesNotExist:
+            return Response({"error": "User not found"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+class SendRequestView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    serializer_class = UserSerializer
+
+    def post(self, request):
+        model = get_user_model()
+        receiver = request.query_params.get("id")
+        if not receiver:
+            return Response({"error": "id who to send the request is required"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user_to_request = model.objects.get(id=receiver)
+            if user_to_request.friends.filter().exists():
+                if request.user in user_to_request.friends.all():
+                    return Response({"error": "user is already a friend"}, status=status.HTTP_400_BAD_REQUEST)
+            user_to_request.received_requests.add(request.user)
+            return Response({"message": "Request sent successfully"},
+                            status=status.HTTP_200_OK)
+        except model.DoesNotExist:
+            return Response({"error": "User not found"},
+                            status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(["POST"])

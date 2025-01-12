@@ -11,6 +11,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
     password = serializers.CharField(write_only=True)
     profile_picture_link = serializers.SerializerMethodField()
     friends = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    received_requests = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     def get_profile_picture_link(self, obj):
         if obj.profile_picture:
@@ -28,6 +29,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
             "birthday",
             "gender",
             "phone_number",
+            "received_requests",
             "friends",
             "instagram",
             "profile_picture_link",

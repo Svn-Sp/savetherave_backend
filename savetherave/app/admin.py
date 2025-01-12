@@ -18,6 +18,7 @@ class CustomUserAdmin(UserAdmin):
                     "birthday",
                     "gender",
                     "phone_number",
+                    "received_requests",
                     "friends",
                     "instagram",
                 ),

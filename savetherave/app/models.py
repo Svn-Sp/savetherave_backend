@@ -10,6 +10,7 @@ class User(AbstractUser):
     birthday = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True, null=True)
     phone_number = models.CharField(max_length=25, blank=True, null=True)
+    received_requests = models.ManyToManyField("self", blank=True, symmetrical=False)
     friends = models.ManyToManyField("self", blank=True)
     instagram = models.CharField(max_length=99, blank=True, null=True)
 
