@@ -21,4 +21,5 @@ urlpatterns = [
     path("item/assign/", views.assign_to_item),
     path("party/join/", views.join_party),
     path("party/leave/", views.leave_party),
+    path("user/level_friends/<int:level>/", views.get_level_friends),
 ]
