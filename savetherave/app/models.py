@@ -62,6 +62,7 @@ class Party(models.Model):
     def calculate_invited_people(self) -> list[User]:
         self.invited_people.add(*self.white_list.all())
         self.invited_people.add(*self.host.get_level_friends(self.invitation_level))
+        self.invited_people.add(self.host)
         self.save()
 
     # todo THIS DOES NOT WORK
