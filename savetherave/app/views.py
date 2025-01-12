@@ -68,7 +68,7 @@ class CreateUserView(CreateAPIView):
     permission_classes = [AllowAny]
     authentication_classes = []
     serializer_class = UserSerializer
-    
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -266,3 +266,16 @@ def leave_party(request):
     party.participants.remove(user)
     party.save()
     return JsonResponse({"message": "Left successfully"})
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_level_friends(request, level):
+    user = request.user
+    return JsonResponse(
+        UserSerializer(
+            user.get_level_friends(level), many=True, context={"request": request}
+        ).data,
+        safe=False,
+    )

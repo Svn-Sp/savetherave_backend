@@ -14,6 +14,22 @@ class User(AbstractUser):
     friends = models.ManyToManyField("self", blank=True)
     instagram = models.CharField(max_length=99, blank=True, null=True)
 
+    def get_level_friends(self, level: int) -> list["User"]:
+        if level < 1:
+            raise ValueError("Level must be greater than 0")
+        friends = []
+        visited_ids = set()
+        multilevel_queue = [[friend for friend in self.friends.all()]]
+        while len(multilevel_queue) <= level:
+            multilevel_queue.append([])
+            for friend in multilevel_queue[-2]:
+                if friend.id in visited_ids:
+                    continue
+                visited_ids.add(friend.id)
+                friends.append(friend)
+                multilevel_queue[-1].extend(friend.friends.all())
+        return friends
+
 
 class Party(models.Model):
     name = models.CharField(max_length=100)
@@ -36,19 +52,8 @@ class Party(models.Model):
         return self.name
 
     def calculate_invited_people(self) -> list[User]:
-        invited_people = []
-        visited_ids = set()
-        multilevel_queue = [[friend for friend in self.host.friends.all()]]
-        while len(multilevel_queue) <= self.invitation_level:
-            multilevel_queue.append([])
-            for friend in multilevel_queue[-2]:
-                if friend.id in visited_ids:
-                    continue
-                visited_ids.add(friend.id)
-                invited_people.append(friend)
-                multilevel_queue[-1].extend(friend.friends.all())
         self.invited_people.add(*self.white_list.all())
-        self.invited_people.add(*invited_people)
+        self.invited_people.add(*self.host.get_level_friends(self.invitation_level))
         self.save()
 
     def is_invited(self, user: User) -> bool:
