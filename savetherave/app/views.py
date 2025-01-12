@@ -44,13 +44,12 @@ def received_requests(request):
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def are_friends(request):
+def are_friends(request, id):
     user = request.user
-    user_id = request.query_params.get("id")
     if not user_id:
         return Response({"error": "id is required"}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        friend = get_user_model().objects.get(id=user_id)
+        friend = get_user_model().objects.get(id=id)
         are_friends = user.friends.filter(id=friend.id).exists()
         return JsonResponse({"are_friends": are_friends})
     except get_user_model().DoesNotExist:
@@ -69,7 +68,7 @@ class CreateUserView(CreateAPIView):
     permission_classes = [AllowAny]
     authentication_classes = []
     serializer_class = UserSerializer
-
+    
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -86,9 +85,9 @@ class AcceptFriendView(CreateAPIView):
     authentication_classes = [TokenAuthentication]
     serializer_class = UserSerializer
 
-    def post(self, request):
+    def post(self, request, id):
         model = get_user_model()
-        friend = request.query_params.get("id")
+        friend = id
         if not friend:
             return Response(
                 {"error": "id who to add is required"},
@@ -112,9 +111,9 @@ class DeclineFriendView(CreateAPIView):
     authentication_classes = [TokenAuthentication]
     serializer_class = UserSerializer
 
-    def post(self, request):
+    def post(self, request, id):
         model = get_user_model()
-        friend = request.query_params.get("id")
+        friend = id
         if not friend:
             return Response(
                 {"error": "id who to decline is required"},
@@ -143,9 +142,9 @@ class SendRequestView(CreateAPIView):
     authentication_classes = [TokenAuthentication]
     serializer_class = UserSerializer
 
-    def post(self, request):
+    def post(self, request, id):
         model = get_user_model()
-        receiver = request.query_params.get("id")
+        receiver = id
         if not receiver:
             return Response(
                 {"error": "id who to send the request is required"},
