@@ -218,3 +218,29 @@ def assign_to_item(request):
     item.brought_by = user
     item.save()
     return JsonResponse({"message": "Assigned successfully"})
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def join_party(request):
+    user = request.user
+    party = Party.objects.get(id=request.data["party_id"])
+    if not party.is_invited(user):
+        return HttpResponse(status=403)
+    party.participants.add(user)
+    party.save()
+    return JsonResponse({"message": "Registered successfully"})
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def leave_party(request):
+    user = request.user
+    party = Party.objects.get(id=request.data["party_id"])
+    if not party.is_invited(user):
+        return HttpResponse(status=403)
+    party.participants.remove(user)
+    party.save()
+    return JsonResponse({"message": "Left successfully"})
