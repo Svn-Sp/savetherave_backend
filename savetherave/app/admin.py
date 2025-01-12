@@ -18,7 +18,7 @@ class CustomUserAdmin(UserAdmin):
                     "gender",
                     "phone_number",
                     "friends",
-                    "instagram_url",
+                    "instagram",
                 ),
             },
         ),

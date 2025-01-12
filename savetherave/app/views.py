@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
@@ -13,15 +13,18 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from app.serializer import UserSerializer
+from app.models import Party, User
+from app.serializer import PartySerializer, UserSerializer
 
 
 # Create your views here
 @api_view(["GET"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def user_info(request):
-    return JsonResponse(UserSerializer(request.user).data)
+@authentication_classes([])
+@permission_classes([AllowAny])
+def user_info(request, id):
+    return JsonResponse(
+        UserSerializer(User.objects.get(id=id), context={"request": request}).data
+    )
 
 
 class CreateUserView(CreateAPIView):
@@ -41,6 +44,27 @@ class CreateUserView(CreateAPIView):
         )
 
 
+class AddFriendView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    serializer_class = UserSerializer
+
+    def post(self, request):
+        model = get_user_model()
+        friend_name = request.query_params.get("friend_name")
+        if not friend_name:
+            return Response({"error": "friend_name is required"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            friend = model.objects.get(username=friend_name)
+            request.user.friends.add(friend)
+            return Response({"message": "Friend added successfully"},
+                            status=status.HTTP_200_OK)
+        except model.DoesNotExist:
+            return Response({"error": "User not found"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -49,3 +73,34 @@ def set_profile_picture(request):
     user.profile_picture = request.FILES.get("image")
     user.save()
     return JsonResponse(UserSerializer(user).data)
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def create_party(request):
+    user = request.user
+    party = Party.objects.create(
+        name=request.data["name"],
+        invitation_level=request.data["invitation_level"],
+        host=user,
+        time=request.data["time"],
+        location=request.data["location"],
+        image=request.FILES.get("image"),
+    )
+    party.white_list.add(
+        *get_user_model().objects.filter(id__in=request.data["white_list"])
+    )
+    party.calculate_invited_people()
+    party.save()
+    return JsonResponse({"party_id": party.id})
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_party_info(request, party_id):
+    party = Party.objects.get(id=request.GET.get("party_id"))
+    if not party.is_invited(request.user):
+        return HttpResponse(status=403)
+    return JsonResponse(PartySerializer(party).data)
