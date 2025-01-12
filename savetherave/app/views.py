@@ -49,7 +49,7 @@ class CreateUserView(CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         token, _ = Token.objects.get_or_create(user=serializer.instance)
         return Response(
-            {"token": token}, status=status.HTTP_201_CREATED, headers=headers
+            {"token": str(token)}, status=status.HTTP_201_CREATED, headers=headers
         )
 
 
