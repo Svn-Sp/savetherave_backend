@@ -18,6 +18,8 @@ class User(AbstractUser):
 class Party(models.Model):
     name = models.CharField(max_length=100)
     invitation_level = models.IntegerField()
+    description = models.TextField(blank=True, null=True)
+    spotify_link = models.CharField(max_length=100, blank=True, null=True)
     host = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="owned_parties"
     )
