@@ -46,6 +46,18 @@ class Party(models.Model):
                 multilevel_queue[-1].extend(friend.friends.all())
         self.invited_people.add(*self.white_list.all())
         self.invited_people.add(*invited_people)
+        self.save()
 
     def is_invited(self, user: User) -> bool:
         return user in self.invited_people.all() or user == self.host
+
+
+class Item(models.Model):
+    name = models.CharField(max_length=100)
+    brought_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name="items")
