@@ -426,7 +426,7 @@ class CheckInView(CreateAPIView):
         model = get_user_model()
         party_id = request.data["id"]
         user_id = request.data["user_id"]
-        user = model.objects.get(user_id)
+        user = model.objects.get(id=user_id)
         joinable_parties = user.allowed_parties.all()
         if not joinable_parties.filter(id=party_id).exists():
             return Response(
