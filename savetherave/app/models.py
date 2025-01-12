@@ -26,7 +26,7 @@ class User(AbstractUser):
         while len(multilevel_queue) <= level:
             multilevel_queue.append([])
             for friend in multilevel_queue[-2]:
-                if friend.id in visited_ids:
+                if friend.id in visited_ids or friend == self:
                     continue
                 visited_ids.add(friend.id)
                 friends.append(friend)
@@ -88,3 +88,11 @@ class Item(models.Model):
         null=True,
     )
     party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name="items")
+
+
+class Notification(models.Model):
+    sender = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="sent_notifications"
+    )
+    receiver = models.ManyToManyField(User, related_name="received_notifications")
+    message = models.TextField()
