@@ -203,6 +203,7 @@ def create_party(request):
         description=request.data.get("description", None),
         max_people=request.data.get("max_people", 9999),
     )
+    party.checked_in.add(user)
     for item_name, _ in request.data["items"].items():
         item = Item.objects.create(
             name=item_name,
