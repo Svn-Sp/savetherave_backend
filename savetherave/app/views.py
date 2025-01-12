@@ -296,3 +296,41 @@ def search_users_by_username(request):
         UserSerializer(users, many=True, context={"request": request}).data,
         safe=False,
     )
+
+class CheckInView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    serializer_class = PartySerializer
+
+    def post(self, request, party_id):
+        joinable_parties = request.user.allowed_parties.all()
+        if not joinable_parties.filter(id=party_id).exists():
+            return Response(
+                {"message": "Forbidden: Non invited"}, status=status.HTTP_403_FORBIDDEN
+            )
+        model = get_user_model()
+        if not party_id:
+            return Response(
+                {"error": "Party id missing and must be provided with /checkin/<partyid>"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            party = joinable_parties.get(id=party_id)
+            print("partyid", party)
+            if party.checked_in.exists() and party.checked_in.filter(id=request.user.id).exists():
+                return Response(
+                    {"error": "User is already checked in."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if party.invited_people.filter(id=request.user.id).exists():
+                party.checked_in.add(request.user)
+                return Response(
+                    {"message": "Successfully checked in."}, status=status.HTTP_200_OK
+                )
+            return Response(
+                {"message": "Forbidden: Non invited"}, status=status.HTTP_403_FORBIDDEN
+            )
+        except model.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )

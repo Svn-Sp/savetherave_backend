@@ -47,6 +47,7 @@ class ItemSerializer(serializers.HyperlinkedModelSerializer):
 class PartySerializer(serializers.HyperlinkedModelSerializer):
     host = UserSerializer()
     participants = UserSerializer(many=True)
+    checked_in = UserSerializer(many=True)
     image_link = serializers.SerializerMethodField()
     items = ItemSerializer(many=True)
 
@@ -69,4 +70,5 @@ class PartySerializer(serializers.HyperlinkedModelSerializer):
             "location",
             "image_link",
             "participants",
+            "checked_in"
         ]

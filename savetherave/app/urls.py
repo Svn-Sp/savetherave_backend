@@ -19,6 +19,7 @@ urlpatterns = [
     path("user/", views.token_based_user_info),
     path("party/joinables/", views.get_joinable_parties),
     path("item/assign/", views.assign_to_item),
+    path("party/checkin/<int:party_id>/", views.CheckInView.as_view()),
     path("party/join/", views.join_party),
     path("party/leave/", views.leave_party),
     path("user/level_friends/<int:level>/", views.get_level_friends),
