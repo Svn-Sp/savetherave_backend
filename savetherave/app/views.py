@@ -1,3 +1,5 @@
+import sys
+
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -27,6 +29,13 @@ def user_info(request, id):
     )
 
 
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def token_based_user_info(request):
+    return JsonResponse(UserSerializer(request.user, context={"request": request}).data)
+
+
 class CreateUserView(CreateAPIView):
     model = get_user_model()
     permission_classes = [AllowAny]
@@ -40,7 +49,7 @@ class CreateUserView(CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         token, _ = Token.objects.get_or_create(user=serializer.instance)
         return Response(
-            {"token": token.key}, status=status.HTTP_201_CREATED, headers=headers
+            {"token": token}, status=status.HTTP_201_CREATED, headers=headers
         )
 
 
@@ -99,8 +108,8 @@ def create_party(request):
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_party_info(request, party_id):
-    party = Party.objects.get(id=request.GET.get("party_id"))
+def get_party_info(request, id):
+    party = Party.objects.get(id=id)
     if not party.is_invited(request.user):
         return HttpResponse(status=403)
-    return JsonResponse(PartySerializer(party).data)
+    return JsonResponse(PartySerializer(party, context={"request": request}).data)
