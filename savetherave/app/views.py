@@ -279,3 +279,15 @@ def get_level_friends(request, level):
         ).data,
         safe=False,
     )
+
+
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def search_users_by_username(request):
+    username = request.data["username"]
+    users = get_user_model().objects.filter(username__icontains=username)
+    return JsonResponse(
+        UserSerializer(users, many=True, context={"request": request}).data,
+        safe=False,
+    )
