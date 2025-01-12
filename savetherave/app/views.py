@@ -1,3 +1,5 @@
+import sys
+
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -13,7 +15,7 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from app.models import Party, User
+from app.models import Item, Party, User
 from app.serializer import PartySerializer, UserSerializer
 
 
@@ -25,7 +27,7 @@ def user_info(request, id):
     return JsonResponse(
         UserSerializer(User.objects.get(id=id), context={"request": request}).data
     )
-    
+
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -36,7 +38,7 @@ def received_requests(request):
         UserSerializer(requests, many=True, context={"request": request}).data,
         safe=False
     )
-    
+
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -53,20 +55,27 @@ def are_friends(request):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def token_based_user_info(request):
+    return JsonResponse(UserSerializer(request.user, context={"request": request}).data)
+
+
 class CreateUserView(CreateAPIView):
     model = get_user_model()
     permission_classes = [AllowAny]
     authentication_classes = []
     serializer_class = UserSerializer
 
-    def create(self, request, *args, **kwargs):  # <- here i forgot self
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         token, _ = Token.objects.get_or_create(user=serializer.instance)
         return Response(
-            {"token": token.key}, status=status.HTTP_201_CREATED, headers=headers
+            {"token": str(token)}, status=status.HTTP_201_CREATED, headers=headers
         )
 
 
@@ -90,7 +99,7 @@ class AcceptFriendView(CreateAPIView):
         except model.DoesNotExist:
             return Response({"error": "User not found"},
                             status=status.HTTP_404_NOT_FOUND)
-            
+
 class DeclineFriendView(CreateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -113,7 +122,7 @@ class DeclineFriendView(CreateAPIView):
         except model.DoesNotExist:
             return Response({"error": "User not found"},
                             status=status.HTTP_404_NOT_FOUND)
-            
+
 class SendRequestView(CreateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -161,6 +170,12 @@ def create_party(request):
         location=request.data["location"],
         image=request.FILES.get("image"),
     )
+    for item_name, _ in request.data["items"].items():
+        item = Item.objects.create(
+            name=item_name,
+            party=party,
+        )
+        item.save()
     party.white_list.add(
         *get_user_model().objects.filter(id__in=request.data["white_list"])
     )
@@ -172,8 +187,34 @@ def create_party(request):
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_party_info(request, party_id):
-    party = Party.objects.get(id=request.GET.get("party_id"))
+def get_party_info(request, id):
+    party = Party.objects.get(id=id)
     if not party.is_invited(request.user):
         return HttpResponse(status=403)
-    return JsonResponse(PartySerializer(party).data)
+    return JsonResponse(PartySerializer(party, context={"request": request}).data)
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_joinable_parties(request):
+    user = request.user
+    parties = user.allowed_parties.all()
+    return JsonResponse(
+        PartySerializer(parties, many=True, context={"request": request}).data,
+        safe=False,
+    )
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def assign_to_item(request):
+    user = request.user
+    item = Item.objects.get(id=request.data["item_id"])
+    if not item.party.is_invited(user):
+        print("User is not invited")
+        return HttpResponse(status=403)
+    item.brought_by = user
+    item.save()
+    return JsonResponse({"message": "Assigned successfully"})
