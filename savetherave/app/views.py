@@ -52,7 +52,10 @@ def are_friends(request):
     try:
         friend = get_user_model().objects.get(id=id)
         are_friends = user.friends.filter(id=friend.id).exists()
-        return JsonResponse({"are_friends": are_friends})
+        if not are_friends:
+            if friend.received_requests.filter(id=user.id).exists():
+                return JsonResponse({"are_friends": "Pending"})
+        return JsonResponse({"are_friends": str(are_friends)})
     except get_user_model().DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
