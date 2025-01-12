@@ -100,3 +100,28 @@ class Notification(models.Model):
     )
     receiver = models.ManyToManyField(User, related_name="received_notifications")
     message = models.TextField()
+
+
+class BringHomeRequest(models.Model):
+    requester = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="sent_buddy_requests"
+    )
+    party = models.ForeignKey(
+        Party, on_delete=models.CASCADE, related_name="buddy_requests"
+    )
+    note = models.TextField()
+    accepted = models.BooleanField(default=False)
+    buddy = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="answered_buddy_requests",
+        null=True,
+        blank=True,
+    )
+
+    def get_status(self) -> str:
+        return (
+            "Waiting for buddy"
+            if self.buddy is None
+            else ("Waiting for confirmation" if not self.accepted else "Completed")
+        )

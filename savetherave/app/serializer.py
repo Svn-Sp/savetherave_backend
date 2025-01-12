@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.urls import include, path
 from rest_framework import routers, serializers, status, viewsets
 
-from app.models import Item, Notification, Party
+from app.models import BringHomeRequest, Item, Notification, Party
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
