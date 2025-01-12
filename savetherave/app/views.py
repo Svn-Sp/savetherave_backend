@@ -228,7 +228,7 @@ def get_party_info(request, id):
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_joinable_parties(request):
+def get_relevant_parties(request):
     user = request.user
     parties = user.allowed_parties.all()
     return JsonResponse(
@@ -320,6 +320,11 @@ def search_users_by_username(request):
                 print("Found friend in level", level, friend.username)
                 sorted_by_relationship_distance.append(friend)
             level += 1
+        if len(sorted_by_relationship_distance) < 15:
+            # fill up with random users if less than 15
+            for user in get_user_model().objects.all()[:15]:
+                if user not in sorted_by_relationship_distance:
+                    sorted_by_relationship_distance.append(user)
         return JsonResponse(
             UserSerializer(sorted_by_relationship_distance, many=True).data, safe=False
         )
