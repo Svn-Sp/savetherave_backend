@@ -487,8 +487,8 @@ def request_bring_back_buddy(request):
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_bring_back_buddy_requests(request, id):
-    party = Party.objects.get(id=id)
+def get_bring_back_buddy_requests(request):
+    party = Party.objects.get(id=request.data["party_id"])
     requests = party.buddy_requests.all()
     displayed_requests = []
     for request_ in requests:

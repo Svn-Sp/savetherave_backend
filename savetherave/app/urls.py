@@ -28,7 +28,7 @@ urlpatterns = [
     path("user/notifications/", views.get_notifications),
     path("user/report/", views.report_guest),
     path("bringbackbuddy/request/", views.request_bring_back_buddy),
-    path("bringbackbuddy/<int:id>/", views.get_bring_back_buddy_requests),
+    path("bringbackbuddy/", views.get_bring_back_buddy_requests),
     path("bringbackbuddy/apply/", views.apply_as_bring_back_buddy),
     path("user/last_check_in/", views.get_latest_check_in),
     path("bringbackbuddy/review/", views.review_buddy_application),
