@@ -246,7 +246,9 @@ def get_relevant_parties(request):
 @permission_classes([IsAuthenticated])
 def assign_to_item(request):
     user = request.user
-    item = Item.objects.get(id=request.data["item_id"])
+    item = Item.objects.get(
+        name=request.data["item_name"], party_id=request.data["party_id"]
+    )
     if not item.party.is_invited(user):
         print("User is not invited")
         return HttpResponse(status=403)
@@ -394,8 +396,7 @@ def get_notifications(request):
     user = request.user
     notifications = list(user.received_notifications.all())
     # Delete read notifications
-    for notification in notifications:
-        notification.delete()
+    user.received_notifications.clear()
     return JsonResponse(
         NotificationSerializer(
             notifications, many=True, context={"request": request}
@@ -484,7 +485,7 @@ def request_bring_back_buddy(request):
     return JsonResponse({"message": "Requested successfully"})
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def get_bring_back_buddy_requests(request):
