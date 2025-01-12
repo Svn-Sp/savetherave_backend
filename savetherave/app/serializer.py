@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.urls import include, path
 from rest_framework import routers, serializers, status, viewsets
 
-from app.models import Party
+from app.models import Item, Party
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
@@ -34,10 +34,19 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         ]
 
 
+class ItemSerializer(serializers.HyperlinkedModelSerializer):
+    brought_by = UserSerializer()
+
+    class Meta:
+        model = Item
+        fields = ["id", "name", "brought_by"]
+
+
 class PartySerializer(serializers.HyperlinkedModelSerializer):
     host = UserSerializer()
     participants = UserSerializer(many=True)
     image_link = serializers.SerializerMethodField()
+    items = ItemSerializer(many=True)
 
     def get_image_link(self, obj):
         if obj.image:
@@ -50,6 +59,7 @@ class PartySerializer(serializers.HyperlinkedModelSerializer):
             "id",
             "name",
             "invitation_level",
+            "items",
             "host",
             "time",
             "location",

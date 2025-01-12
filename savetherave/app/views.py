@@ -15,7 +15,7 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from app.models import Party, User
+from app.models import Item, Party, User
 from app.serializer import PartySerializer, UserSerializer
 
 
@@ -42,7 +42,7 @@ class CreateUserView(CreateAPIView):
     authentication_classes = []
     serializer_class = UserSerializer
 
-    def create(self, request, *args, **kwargs):  # <- here i forgot self
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -62,16 +62,19 @@ class AddFriendView(CreateAPIView):
         model = get_user_model()
         friend_name = request.query_params.get("friend_name")
         if not friend_name:
-            return Response({"error": "friend_name is required"},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "friend_name is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
         try:
             friend = model.objects.get(username=friend_name)
             request.user.friends.add(friend)
-            return Response({"message": "Friend added successfully"},
-                            status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Friend added successfully"}, status=status.HTTP_200_OK
+            )
         except model.DoesNotExist:
-            return Response({"error": "User not found"},
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
 @api_view(["POST"])
@@ -97,6 +100,12 @@ def create_party(request):
         location=request.data["location"],
         image=request.FILES.get("image"),
     )
+    for item_name, _ in request.data["items"].items():
+        item = Item.objects.create(
+            name=item_name,
+            party=party,
+        )
+        item.save()
     party.white_list.add(
         *get_user_model().objects.filter(id__in=request.data["white_list"])
     )
@@ -113,3 +122,29 @@ def get_party_info(request, id):
     if not party.is_invited(request.user):
         return HttpResponse(status=403)
     return JsonResponse(PartySerializer(party, context={"request": request}).data)
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_joinable_parties(request):
+    user = request.user
+    parties = user.allowed_parties.all()
+    return JsonResponse(
+        PartySerializer(parties, many=True, context={"request": request}).data,
+        safe=False,
+    )
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def assign_to_item(request):
+    user = request.user
+    item = Item.objects.get(id=request.data["item_id"])
+    if not item.party.is_invited(user):
+        print("User is not invited")
+        return HttpResponse(status=403)
+    item.brought_by = user
+    item.save()
+    return JsonResponse({"message": "Assigned successfully"})
