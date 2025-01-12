@@ -44,7 +44,8 @@ def received_requests(request):
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def are_friends(request, id):
+def are_friends(request):
+    id = request.data["id"]
     user = request.user
     if not id:
         return Response({"error": "id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -85,9 +86,9 @@ class AcceptFriendView(CreateAPIView):
     authentication_classes = [TokenAuthentication]
     serializer_class = UserSerializer
 
-    def post(self, request, id):
+    def post(self, request):
         model = get_user_model()
-        friend = id
+        friend = request.data["id"]
         if not friend:
             return Response(
                 {"error": "id who to add is required"},
@@ -116,9 +117,9 @@ class DeclineFriendView(CreateAPIView):
     authentication_classes = [TokenAuthentication]
     serializer_class = UserSerializer
 
-    def post(self, request, id):
+    def post(self, request):
         model = get_user_model()
-        friend = id
+        friend = request.data["id"]
         if not friend:
             return Response(
                 {"error": "id who to decline is required"},
@@ -147,9 +148,10 @@ class SendRequestView(CreateAPIView):
     authentication_classes = [TokenAuthentication]
     serializer_class = UserSerializer
 
-    def post(self, request, id):
+    def post(self, request):
         model = get_user_model()
-        receiver = id
+        receiver = request.data["id"]
+        print("receiver", receiver)
         if not receiver:
             return Response(
                 {"error": "id who to send the request is required"},
@@ -367,7 +369,8 @@ class CheckInView(CreateAPIView):
     authentication_classes = [TokenAuthentication]
     serializer_class = PartySerializer
 
-    def post(self, request, party_id):
+    def post(self, request):
+        party_id = request.data["id"]
         joinable_parties = request.user.allowed_parties.all()
         if not joinable_parties.filter(id=party_id).exists():
             return Response(
