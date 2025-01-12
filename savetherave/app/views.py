@@ -15,7 +15,7 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from app.models import Item, Notification, Party, User
+from app.models import BringHomeRequest, Item, Notification, Party, User
 from app.serializer import NotificationSerializer, PartySerializer, UserSerializer
 
 
@@ -294,17 +294,31 @@ def leave_party(request):
     )
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_level_friends(request, level):
+def get_level_friends(request):
     user = request.user
     return JsonResponse(
         UserSerializer(
-            user.get_level_friends(level), many=True, context={"request": request}
+            user.get_level_friends(request.data["level"]),
+            many=True,
+            context={"request": request},
         ).data,
         safe=False,
     )
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_latest_check_in(request):
+    user = request.user
+    all_checked_in_parties = user.checked_into.all()
+    if not all_checked_in_parties.exists():
+        return JsonResponse({})
+    most_recent_party = all_checked_in_parties.order_by("-time").first()
+    return JsonResponse(PartySerializer(most_recent_party).data)
 
 
 @api_view(["POST"])
@@ -388,6 +402,7 @@ def get_notifications(request):
         safe=False,
     )
 
+
 def notify_friend_checked_in(user, party):
     friends = user.friends
     checked_in_friends = friends.filter(checked_into=party)
@@ -398,6 +413,7 @@ def notify_friend_checked_in(user, party):
     for friend in checked_in_friends:
         notification.receiver.add(friend)
     notification.save()
+
 
 class CheckInView(CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -442,3 +458,80 @@ class CheckInView(CreateAPIView):
             return Response(
                 {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def request_bring_back_buddy(request):
+    requester = request.user
+    bbb_request = BringHomeRequest.objects.create(
+        requester=requester,
+        party=Party.objects.get(id=request.data["party_id"]),
+        note=request.data["note"],
+    )
+    bbb_request.save()
+    notification = Notification.objects.create(
+        message=f"Someone is searching for a BringBackBuddy: {bbb_request.note}",
+    )
+    guests = Party.objects.get(id=request.data["party_id"]).participants.all()
+    notification.receiver.add(*guests)
+    notification.save()
+
+    return JsonResponse({"message": "Requested successfully"})
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_bring_back_buddy_requests(request, id):
+    party = Party.objects.get(id=id)
+    requests = party.buddy_requests.all()
+    displayed_requests = []
+    for request_ in requests:
+        displayed_request = {
+            "id": request_.id,
+            "note": request_.note,
+            "status": request_.get_status(),
+            "buddy": UserSerializer(request_.buddy).data,
+        }
+        if request_.requester == request.user:
+            displayed_request["requester"] = UserSerializer(request_.requester).data
+        displayed_requests.append(displayed_request)
+    return JsonResponse(displayed_requests, safe=False)
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def apply_as_bring_back_buddy(request):
+    bbb_request = BringHomeRequest.objects.get(id=request.data["request_id"])
+    bbb_request.buddy = request.user
+    bbb_request.save()
+    notification = Notification.objects.create(
+        message=f"{request.user.username} offers to bring you back.",
+    )
+    notification.receiver.add(bbb_request.requester)
+    notification.save()
+    return JsonResponse({"message": "Applied successfully"})
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def review_buddy_application(request):
+    bbb_request = BringHomeRequest.objects.get(id=request.data["request_id"])
+    if not bbb_request.requester == request.user:
+        return JsonResponse({"error": "Forbidden"}, status=403)
+    bbb_request.accepted = request.data["accepted"]
+    bbb_request.save()
+    if bbb_request.accepted:
+        notification = Notification.objects.create(
+            message=f"{bbb_request.requester.username} Just agreed to share the way home.",
+        )
+        notification.receiver.add(bbb_request.buddy)
+        notification.save()
+    else:
+        bbb_request.buddy = None
+        bbb_request.save()
+    return JsonResponse({"message": "Reviewed successfully"})
