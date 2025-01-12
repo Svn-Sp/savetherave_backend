@@ -12,4 +12,5 @@ urlpatterns = [
     path("user/set_profile_picture/", views.set_profile_picture),
     path("party/create/", views.create_party),
     path("party/<int:id>/", views.get_party_info),
+    path("user/add_friend/", views.AddFriendView.as_view()),
 ]

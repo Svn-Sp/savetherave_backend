@@ -53,6 +53,27 @@ class CreateUserView(CreateAPIView):
         )
 
 
+class AddFriendView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    serializer_class = UserSerializer
+
+    def post(self, request):
+        model = get_user_model()
+        friend_name = request.query_params.get("friend_name")
+        if not friend_name:
+            return Response({"error": "friend_name is required"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            friend = model.objects.get(username=friend_name)
+            request.user.friends.add(friend)
+            return Response({"message": "Friend added successfully"},
+                            status=status.HTTP_200_OK)
+        except model.DoesNotExist:
+            return Response({"error": "User not found"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
