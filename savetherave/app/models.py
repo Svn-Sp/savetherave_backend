@@ -23,7 +23,7 @@ class User(AbstractUser):
         while len(multilevel_queue) <= level:
             multilevel_queue.append([])
             for friend in multilevel_queue[-2]:
-                if friend.id in visited_ids:
+                if friend.id in visited_ids or friend == self:
                     continue
                 visited_ids.add(friend.id)
                 friends.append(friend)
