@@ -388,6 +388,16 @@ def get_notifications(request):
         safe=False,
     )
 
+def notify_friend_checked_in(user, party):
+    friends = user.friends
+    checked_in_friends = friends.filter(checked_into=party)
+    notification = Notification.objects.create(
+        sender=user,
+        message=f"{user.username} has checked into the party {party.name}!",
+    )
+    for friend in checked_in_friends:
+        notification.receiver.add(friend)
+    notification.save()
 
 class CheckInView(CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -411,7 +421,6 @@ class CheckInView(CreateAPIView):
             )
         try:
             party = joinable_parties.get(id=party_id)
-            print("partyid", party)
             if (
                 party.checked_in.exists()
                 and party.checked_in.filter(id=request.user.id).exists()
@@ -422,6 +431,7 @@ class CheckInView(CreateAPIView):
                 )
             if party.invited_people.filter(id=request.user.id).exists():
                 party.checked_in.add(request.user)
+                notify_friend_checked_in(request.user, party)
                 return Response(
                     {"message": "Successfully checked in."}, status=status.HTTP_200_OK
                 )
