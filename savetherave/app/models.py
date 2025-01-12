@@ -62,6 +62,7 @@ class Party(models.Model):
     def calculate_invited_people(self) -> list[User]:
         self.invited_people.add(*self.white_list.all())
         self.invited_people.add(*self.host.get_level_friends(self.invitation_level))
+        self.invited_people.add(self.host)
         self.save()
 
     # todo THIS DOES NOT WORK
@@ -91,7 +92,11 @@ class Item(models.Model):
 
 class Notification(models.Model):
     sender = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="sent_notifications"
+        User,
+        on_delete=models.CASCADE,
+        related_name="sent_notifications",
+        blank=True,
+        null=True,
     )
     receiver = models.ManyToManyField(User, related_name="received_notifications")
     message = models.TextField()

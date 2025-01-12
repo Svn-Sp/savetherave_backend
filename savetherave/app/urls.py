@@ -17,7 +17,7 @@ urlpatterns = [
     path("party/create/", views.create_party),
     path("party/<int:id>/", views.get_party_info),
     path("user/", views.token_based_user_info),
-    path("party/joinables/", views.get_joinable_parties),
+    path("party/relevants/", views.get_relevant_parties),
     path("item/assign/", views.assign_to_item),
     path("party/checkin/", views.CheckInView.as_view()),
     path("party/join/", views.join_party),
@@ -26,4 +26,5 @@ urlpatterns = [
     path("user/search/", views.search_users_by_username),
     path("party/notify/", views.notify_party_people),
     path("user/notifications/", views.get_notifications),
+    path("user/report/", views.report_guest),
 ]
