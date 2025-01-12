@@ -15,4 +15,6 @@ urlpatterns = [
     path("user/add_friend/", views.AddFriendView.as_view()),
     path("party/joinables/", views.get_joinable_parties),
     path("item/assign/", views.assign_to_item),
+    path("party/join/", views.join_party),
+    path("party/leave/", views.leave_party),
 ]
