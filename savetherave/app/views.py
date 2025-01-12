@@ -41,7 +41,7 @@ def received_requests(request):
     )
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def are_friends(request):
