@@ -430,7 +430,7 @@ class CheckInView(CreateAPIView):
         joinable_parties = user.allowed_parties.all()
         if not joinable_parties.filter(id=party_id).exists():
             return Response(
-                {"message": "Forbidden: Non invited"}, status=status.HTTP_403_FORBIDDEN
+                {"error": "Forbidden: Non invited"}, status=status.HTTP_403_FORBIDDEN
             )
         if not party_id:
             return Response(
@@ -456,7 +456,7 @@ class CheckInView(CreateAPIView):
                     {"message": "Successfully checked in."}, status=status.HTTP_200_OK
                 )
             return Response(
-                {"message": "Forbidden: Non invited"}, status=status.HTTP_403_FORBIDDEN
+                {"error": "Forbidden: Non invited"}, status=status.HTTP_403_FORBIDDEN
             )
         except model.DoesNotExist:
             return Response(
