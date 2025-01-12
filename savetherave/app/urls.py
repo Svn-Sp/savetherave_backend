@@ -23,4 +23,6 @@ urlpatterns = [
     path("party/leave/", views.leave_party),
     path("user/level_friends/<int:level>/", views.get_level_friends),
     path("user/search/", views.search_users_by_username),
+    path("party/notify/", views.notify_party_people),
+    path("user/notifications/", views.get_notifications),
 ]
