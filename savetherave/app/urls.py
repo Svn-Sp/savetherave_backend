@@ -26,4 +26,5 @@ urlpatterns = [
     path("user/search/", views.search_users_by_username),
     path("party/notify/", views.notify_party_people),
     path("user/notifications/", views.get_notifications),
+    path("user/report/", views.report_guest),
 ]
