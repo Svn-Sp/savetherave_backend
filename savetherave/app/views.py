@@ -13,16 +13,18 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from app.models import Party
+from app.models import Party, User
 from app.serializer import PartySerializer, UserSerializer
 
 
 # Create your views here
 @api_view(["GET"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def user_info(request):
-    return JsonResponse(UserSerializer(request.user, context={"request": request}).data)
+@authentication_classes([])
+@permission_classes([AllowAny])
+def user_info(request, id):
+    return JsonResponse(
+        UserSerializer(User.objects.get(id=id), context={"request": request}).data
+    )
 
 
 class CreateUserView(CreateAPIView):
