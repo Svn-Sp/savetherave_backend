@@ -62,6 +62,8 @@ class PartySerializer(serializers.HyperlinkedModelSerializer):
             "name",
             "invitation_level",
             "items",
+            "description",
+            "spotify_link",
             "host",
             "time",
             "location",
