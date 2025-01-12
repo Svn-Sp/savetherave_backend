@@ -8,7 +8,7 @@ from savetherave import settings
 urlpatterns = [
     path("user/<int:id>/", views.user_info),
     path("user/send_request/<int:id>/", views.SendRequestView.as_view()),
-    path("user/received_requests/<int:id>/", views.received_requests),
+    path("user/received_requests/", views.received_requests),
     path("user/create/", views.CreateUserView.as_view()),
     path("user/set_profile_picture/", views.set_profile_picture),
     path("user/are_friends/<int:id>/", views.are_friends),

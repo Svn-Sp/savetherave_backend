@@ -46,7 +46,7 @@ def received_requests(request):
 @permission_classes([IsAuthenticated])
 def are_friends(request, id):
     user = request.user
-    if not user_id:
+    if not id:
         return Response({"error": "id is required"}, status=status.HTTP_400_BAD_REQUEST)
     try:
         friend = get_user_model().objects.get(id=id)
@@ -95,10 +95,15 @@ class AcceptFriendView(CreateAPIView):
             )
         try:
             friend = model.objects.get(id=friend)
-            request.user.friends.add(friend)
-            friend.received_requests.remove(request.user)
+            if friend in request.user.received_requests.all():
+                request.user.friends.add(friend)
+                request.user.received_requests.remove(friend)
+                return Response(
+                    {"message": "Friend added successfully"}, status=status.HTTP_200_OK
+                )
             return Response(
-                {"message": "Friend added successfully"}, status=status.HTTP_200_OK
+                {"error": "User sent no request"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         except model.DoesNotExist:
             return Response(
@@ -121,8 +126,8 @@ class DeclineFriendView(CreateAPIView):
             )
         try:
             friend = model.objects.get(id=friend)
-            if request.user in friend.received_requests.all():
-                friend.received_requests.remove(request.user)
+            if friend in request.user.received_requests.all():
+                request.user.received_requests.remove(friend)
             else:
                 return Response(
                     {"error": "User sent no request"},
