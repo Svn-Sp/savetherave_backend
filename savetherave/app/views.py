@@ -302,10 +302,24 @@ def get_level_friends(request, level):
 
 
 @api_view(["POST"])
-@authentication_classes([])
-@permission_classes([AllowAny])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def search_users_by_username(request):
     username = request.data["username"]
+    if username == "":
+        level = 1
+        sorted_by_relationship_distance = []
+        while level < 5 and len(sorted_by_relationship_distance) < 15:
+            friends = request.user.get_level_friends(level)
+            for friend in friends:
+                if friend in sorted_by_relationship_distance or friend == request.user:
+                    continue
+                print("Found friend in level", level, friend.username)
+                sorted_by_relationship_distance.append(friend)
+            level += 1
+        return JsonResponse(
+            UserSerializer(sorted_by_relationship_distance, many=True).data, safe=False
+        )
     users = get_user_model().objects.filter(username__icontains=username)
     return JsonResponse(
         UserSerializer(users, many=True, context={"request": request}).data,
