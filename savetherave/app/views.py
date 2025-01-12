@@ -349,6 +349,21 @@ def notify_party_people(request):
     return JsonResponse({"message": "Notified successfully"})
 
 
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def report_guest(request):
+    reported_user = get_user_model().objects.get(id=request.data["reported_user_id"])
+    party = Party.objects.get(id=request.data["party_id"])
+    notification = Notification.objects.create(
+        message=f"Your guests feel uncomfortable because of {reported_user.first_name} {reported_user.last_name}. You should speak to them.",
+    )
+    notification.receiver.add(party.host)
+    notification.save()
+
+    return JsonResponse({"message": "Reported successfully"})
+
+
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])

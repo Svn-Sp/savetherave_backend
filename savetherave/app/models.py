@@ -91,7 +91,11 @@ class Item(models.Model):
 
 class Notification(models.Model):
     sender = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="sent_notifications"
+        User,
+        on_delete=models.CASCADE,
+        related_name="sent_notifications",
+        blank=True,
+        null=True,
     )
     receiver = models.ManyToManyField(User, related_name="received_notifications")
     message = models.TextField()
