@@ -12,8 +12,7 @@ class User(AbstractUser):
     birthday = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True, null=True)
     phone_number = models.CharField(max_length=25, blank=True, null=True)
-    received_requests = models.ManyToManyField(
-        "self", blank=True, symmetrical=False)
+    received_requests = models.ManyToManyField("self", blank=True, symmetrical=False)
     friends = models.ManyToManyField("self", blank=True)
     instagram = models.CharField(max_length=99, blank=True, null=True)
 
@@ -42,15 +41,17 @@ class Party(models.Model):
     host = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="owned_parties"
     )
+    max_people = models.IntegerField(default=9999)
     time = models.DateTimeField()
     location = models.CharField(max_length=100)
     image = models.ImageField(upload_to="party_images/", blank=True, null=True)
     participants = models.ManyToManyField(
-        User, blank=True)  # User who announced to come
+        User, blank=True
+    )  # User who announced to come
     checked_in = models.ManyToManyField(
-        User, blank=True, related_name="checked_into")  # User who are already checked in
-    white_list = models.ManyToManyField(
-        User, blank=True, related_name="white_lists")
+        User, blank=True, related_name="checked_into"
+    )  # User who are already checked in
+    white_list = models.ManyToManyField(User, blank=True, related_name="white_lists")
     invited_people = models.ManyToManyField(
         User, blank=True, related_name="allowed_parties"
     )  # all Users who may come
@@ -60,8 +61,7 @@ class Party(models.Model):
 
     def calculate_invited_people(self) -> list[User]:
         self.invited_people.add(*self.white_list.all())
-        self.invited_people.add(
-            *self.host.get_level_friends(self.invitation_level))
+        self.invited_people.add(*self.host.get_level_friends(self.invitation_level))
         self.save()
 
     # todo THIS DOES NOT WORK
@@ -73,7 +73,6 @@ class Party(models.Model):
     #             party.calculate_invited_people()
 
     # m2m_changed.connect(update_invited_people, sender=User.friends.through)
-
 
     def is_invited(self, user: User) -> bool:
         return user in self.invited_people.all() or user == self.host

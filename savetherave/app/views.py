@@ -196,6 +196,7 @@ def create_party(request):
         location=request.data["location"],
         spotify_link=request.data.get("spotify_link", None),
         description=request.data.get("description", None),
+        max_people=request.data.get("max_people", 9999),
     )
     for item_name, _ in request.data["items"].items():
         item = Item.objects.create(
@@ -362,6 +363,7 @@ def get_notifications(request):
         safe=False,
     )
 
+
 class CheckInView(CreateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -376,13 +378,18 @@ class CheckInView(CreateAPIView):
         model = get_user_model()
         if not party_id:
             return Response(
-                {"error": "Party id missing and must be provided with /checkin/<partyid>"},
+                {
+                    "error": "Party id missing and must be provided with /checkin/<partyid>"
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
             party = joinable_parties.get(id=party_id)
             print("partyid", party)
-            if party.checked_in.exists() and party.checked_in.filter(id=request.user.id).exists():
+            if (
+                party.checked_in.exists()
+                and party.checked_in.filter(id=request.user.id).exists()
+            ):
                 return Response(
                     {"error": "User is already checked in."},
                     status=status.HTTP_400_BAD_REQUEST,

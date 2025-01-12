@@ -66,11 +66,12 @@ class PartySerializer(serializers.HyperlinkedModelSerializer):
             "description",
             "spotify_link",
             "host",
+            "max_people",
             "time",
             "location",
             "image_link",
             "participants",
-            "checked_in"
+            "checked_in",
         ]
 
 
