@@ -422,13 +422,15 @@ class CheckInView(CreateAPIView):
     serializer_class = PartySerializer
 
     def post(self, request):
+        model = get_user_model()
         party_id = request.data["id"]
-        joinable_parties = request.user.allowed_parties.all()
+        user_id = request.data["user_id"]
+        user = model.objects.get(user_id)
+        joinable_parties = user.allowed_parties.all()
         if not joinable_parties.filter(id=party_id).exists():
             return Response(
                 {"message": "Forbidden: Non invited"}, status=status.HTTP_403_FORBIDDEN
             )
-        model = get_user_model()
         if not party_id:
             return Response(
                 {
@@ -440,15 +442,15 @@ class CheckInView(CreateAPIView):
             party = joinable_parties.get(id=party_id)
             if (
                 party.checked_in.exists()
-                and party.checked_in.filter(id=request.user.id).exists()
+                and party.checked_in.filter(id=user.id).exists()
             ):
                 return Response(
                     {"error": "User is already checked in."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if party.invited_people.filter(id=request.user.id).exists():
-                party.checked_in.add(request.user)
-                notify_friend_checked_in(request.user, party)
+            if party.invited_people.filter(id=user.id).exists():
+                party.checked_in.add(user)
+                notify_friend_checked_in(user, party)
                 return Response(
                     {"message": "Successfully checked in."}, status=status.HTTP_200_OK
                 )
